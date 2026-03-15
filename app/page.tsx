@@ -1,8 +1,14 @@
 import Image from "next/image";
 import Header from "@/components/Header";
 import Feed from "@/components/Feed";
+import { fetchTweets } from "@/lib/fetchTweets";
 
-export default function Home() {
+// Revalidate every 5 minutes — tweets are fetched server-side and cached
+export const revalidate = 300;
+
+export default async function Home() {
+  const tweets = await fetchTweets();
+
   return (
     <div className="min-h-screen bg-dark">
       <Header />
@@ -29,7 +35,7 @@ export default function Home() {
           </div>
         </div>
 
-        <Feed />
+        <Feed tweets={tweets} />
       </main>
 
       <footer className="border-t border-white/5 py-6 text-center text-xs text-gray">
