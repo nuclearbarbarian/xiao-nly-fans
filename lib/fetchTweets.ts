@@ -17,6 +17,9 @@ const USERNAME = "xiaowang1984";
 // e.g. https://your-rsshub.railway.app
 const RSSHUB_URL = process.env.RSSHUB_URL || "";
 
+// Pinned tweet text to filter out (RSSHub includes pinned tweets in the feed)
+const PINNED_TWEET_TEXT = "I finally found a good summary of what it takes at a *technical* level to implement the mass VPP aggregator";
+
 const NITTER_INSTANCES = [
   "https://nitter.privacydev.net",
   "https://nitter.poast.org",
@@ -73,9 +76,12 @@ export async function fetchTweets(): Promise<Tweet[]> {
         };
       });
 
-      cache = { tweets, fetchedAt: Date.now() };
-      console.log(`Fetched ${tweets.length} tweets from ${url}`);
-      return tweets;
+      // Filter out pinned tweet
+      const filtered = tweets.filter((t) => !t.text.startsWith(PINNED_TWEET_TEXT));
+
+      cache = { tweets: filtered, fetchedAt: Date.now() };
+      console.log(`Fetched ${filtered.length} tweets from ${url}`);
+      return filtered;
     } catch {
       continue;
     }
@@ -112,14 +118,6 @@ function stripHtml(html: string): string {
 }
 
 const SAMPLE_TWEETS: Tweet[] = [
-  {
-    id: "sample-1",
-    text: "I finally found a good summary of what it takes at a *technical* level to implement the mass VPP aggregator / economic DSO concepts so that DER can be taken on an equal footing to utility generation\n\nSpoiler:\nIt's a lot of work",
-    date: "2023-11-29T12:00:00Z",
-    link: "https://x.com/xiaowang1984",
-    author: "@xiaowang1984",
-    images: [],
-  },
   {
     id: "sample-2",
     text: "\"Claude create a virtual service representative to deal with all the people who don't agree with their cost allocations\"",
