@@ -6,6 +6,7 @@ export interface Tweet {
   date: string;
   link: string;
   author: string;
+  images: string[];
 }
 
 const parser = new RSSParser();
@@ -53,13 +54,24 @@ export async function fetchTweets(): Promise<Tweet[]> {
     try {
       const feed = await parser.parseURL(url);
 
-      const tweets: Tweet[] = (feed.items || []).map((item, i) => ({
-        id: item.guid || item.link || `tweet-${i}`,
-        text: stripHtml(item.content || item.contentSnippet || item.title || ""),
-        date: item.isoDate || item.pubDate || "",
-        link: item.link?.replace(linkPrefix, "https://x.com") || `https://x.com/${USERNAME}`,
-        author: `@${USERNAME}`,
-      }));
+      const tweets: Tweet[] = (feed.items || []).map((item, i) => {
+        const rawContent = item.content || item.contentSnippet || item.title || "";
+        const images = extractImages(rawContent);
+
+        // Also check enclosure for media
+        if (item.enclosure?.url && !images.includes(item.enclosure.url)) {
+          images.push(item.enclosure.url);
+        }
+
+        return {
+          id: item.guid || item.link || `tweet-${i}`,
+          text: stripHtml(rawContent),
+          date: item.isoDate || item.pubDate || "",
+          link: item.link?.replace(linkPrefix, "https://x.com") || `https://x.com/${USERNAME}`,
+          author: `@${USERNAME}`,
+          images,
+        };
+      });
 
       cache = { tweets, fetchedAt: Date.now() };
       console.log(`Fetched ${tweets.length} tweets from ${url}`);
@@ -72,6 +84,19 @@ export async function fetchTweets(): Promise<Tweet[]> {
   // Fallback: return sample tweets
   console.warn("All RSS sources unavailable, using sample tweets");
   return SAMPLE_TWEETS;
+}
+
+function extractImages(html: string): string[] {
+  const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+  const images: string[] = [];
+  let match;
+  while ((match = imgRegex.exec(html)) !== null) {
+    // Skip emoji and tiny images, only keep tweet media
+    if (match[1] && !match[1].includes("emoji") && !match[1].includes("hashflag")) {
+      images.push(match[1]);
+    }
+  }
+  return images;
 }
 
 function stripHtml(html: string): string {
@@ -93,6 +118,7 @@ const SAMPLE_TWEETS: Tweet[] = [
     date: "2023-11-29T12:00:00Z",
     link: "https://x.com/xiaowang1984",
     author: "@xiaowang1984",
+    images: [],
   },
   {
     id: "sample-2",
@@ -100,6 +126,7 @@ const SAMPLE_TWEETS: Tweet[] = [
     date: "2026-03-15T10:00:00Z",
     link: "https://x.com/xiaowang1984",
     author: "@xiaowang1984",
+    images: [],
   },
   {
     id: "sample-3",
@@ -107,6 +134,7 @@ const SAMPLE_TWEETS: Tweet[] = [
     date: "2026-03-15T09:30:00Z",
     link: "https://x.com/xiaowang1984",
     author: "@xiaowang1984",
+    images: [],
   },
   {
     id: "sample-4",
@@ -114,6 +142,7 @@ const SAMPLE_TWEETS: Tweet[] = [
     date: "2026-03-14T14:00:00Z",
     link: "https://x.com/xiaowang1984",
     author: "@xiaowang1984",
+    images: [],
   },
   {
     id: "sample-5",
@@ -121,6 +150,7 @@ const SAMPLE_TWEETS: Tweet[] = [
     date: "2026-03-15T08:00:00Z",
     link: "https://x.com/xiaowang1984",
     author: "@xiaowang1984",
+    images: [],
   },
   {
     id: "sample-6",
@@ -128,6 +158,7 @@ const SAMPLE_TWEETS: Tweet[] = [
     date: "2026-03-13T16:00:00Z",
     link: "https://x.com/xiaowang1984",
     author: "@xiaowang1984",
+    images: [],
   },
   {
     id: "sample-7",
@@ -135,6 +166,7 @@ const SAMPLE_TWEETS: Tweet[] = [
     date: "2026-03-12T11:00:00Z",
     link: "https://x.com/xiaowang1984",
     author: "@xiaowang1984",
+    images: [],
   },
   {
     id: "sample-8",
@@ -142,5 +174,6 @@ const SAMPLE_TWEETS: Tweet[] = [
     date: "2026-03-11T15:00:00Z",
     link: "https://x.com/xiaowang1984",
     author: "@xiaowang1984",
+    images: [],
   },
 ];

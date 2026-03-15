@@ -9,6 +9,7 @@ interface Tweet {
   date: string;
   link: string;
   author: string;
+  images: string[];
 }
 
 export default function Feed() {

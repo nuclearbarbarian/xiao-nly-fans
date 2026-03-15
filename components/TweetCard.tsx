@@ -8,9 +8,10 @@ interface TweetCardProps {
   date: string;
   link: string;
   author: string;
+  images?: string[];
 }
 
-export default function TweetCard({ id, text, date, link, author }: TweetCardProps) {
+export default function TweetCard({ id, text, date, link, author, images }: TweetCardProps) {
   const formattedDate = date
     ? new Date(date).toLocaleDateString("en-US", {
         month: "short",
@@ -41,6 +42,21 @@ export default function TweetCard({ id, text, date, link, author }: TweetCardPro
 
       {/* Tweet body */}
       <p className="mb-4 whitespace-pre-wrap leading-relaxed text-white/90">{text}</p>
+
+      {/* Tweet images */}
+      {images && images.length > 0 && (
+        <div className={`mb-4 grid gap-2 ${images.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+          {images.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt={`Tweet image ${i + 1}`}
+              className="w-full rounded-xl border border-white/5 object-cover"
+              loading="lazy"
+            />
+          ))}
+        </div>
+      )}
 
       {/* Actions row */}
       <div className="flex items-center justify-between border-t border-white/5 pt-3">
