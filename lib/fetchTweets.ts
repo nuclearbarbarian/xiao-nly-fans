@@ -1,5 +1,11 @@
 import RSSParser from "rss-parser";
 
+export interface QuotedTweet {
+  text: string;
+  author: string;
+  link: string;
+}
+
 export interface Tweet {
   id: string;
   text: string;
@@ -7,6 +13,7 @@ export interface Tweet {
   link: string;
   author: string;
   images: string[];
+  quotedTweet?: QuotedTweet;
 }
 
 const parser = new RSSParser();
@@ -66,13 +73,17 @@ export async function fetchTweets(): Promise<Tweet[]> {
           images.push(item.enclosure.url);
         }
 
+        // Extract quoted tweet before stripping HTML
+        const { quotedTweet, mainContent } = extractQuotedTweet(rawContent);
+
         return {
           id: item.guid || item.link || `tweet-${i}`,
-          text: stripHtml(rawContent),
+          text: stripHtml(mainContent),
           date: item.isoDate || item.pubDate || "",
           link: item.link?.replace(linkPrefix, "https://x.com") || `https://x.com/${USERNAME}`,
           author: `@${USERNAME}`,
           images,
+          ...(quotedTweet && { quotedTweet }),
         };
       });
 
@@ -90,6 +101,48 @@ export async function fetchTweets(): Promise<Tweet[]> {
   // Fallback: return sample tweets
   console.warn("All RSS sources unavailable, using sample tweets");
   return SAMPLE_TWEETS;
+}
+
+function extractQuotedTweet(html: string): { quotedTweet: QuotedTweet | null; mainContent: string } {
+  // RSSHub wraps quoted tweets in <blockquote> tags
+  const blockquoteRegex = /<blockquote[^>]*>([\s\S]*?)<\/blockquote>/i;
+  const match = html.match(blockquoteRegex);
+
+  if (!match) {
+    return { quotedTweet: null, mainContent: html };
+  }
+
+  const blockquoteHtml = match[1];
+
+  // Extract the link to the quoted tweet
+  const linkMatch = blockquoteHtml.match(/<a[^>]+href=["']([^"']*x\.com[^"']*)["'][^>]*>/i)
+    || blockquoteHtml.match(/<a[^>]+href=["']([^"']*twitter\.com[^"']*)["'][^>]*>/i);
+
+  // Extract the author from the link (e.g., https://x.com/username/status/...)
+  let author = "Unknown";
+  let link = "";
+  if (linkMatch) {
+    link = linkMatch[1];
+    const authorMatch = link.match(/(?:x\.com|twitter\.com)\/([^/]+)/);
+    if (authorMatch) {
+      author = `@${authorMatch[1]}`;
+    }
+  }
+
+  // Get the quoted text
+  const quotedText = stripHtml(blockquoteHtml);
+
+  // Remove the blockquote from the main content
+  const mainContent = html.replace(match[0], "").trim();
+
+  if (!quotedText) {
+    return { quotedTweet: null, mainContent: html };
+  }
+
+  return {
+    quotedTweet: { text: quotedText, author, link },
+    mainContent,
+  };
 }
 
 function extractImages(html: string): string[] {

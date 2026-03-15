@@ -2,6 +2,12 @@
 
 import Tooltip from "./Tooltip";
 
+interface QuotedTweet {
+  text: string;
+  author: string;
+  link: string;
+}
+
 interface TweetCardProps {
   id: string;
   text: string;
@@ -9,9 +15,10 @@ interface TweetCardProps {
   link: string;
   author: string;
   images?: string[];
+  quotedTweet?: QuotedTweet;
 }
 
-export default function TweetCard({ id, text, date, link, author, images }: TweetCardProps) {
+export default function TweetCard({ id, text, date, link, author, images, quotedTweet }: TweetCardProps) {
   const formattedDate = date
     ? new Date(date).toLocaleDateString("en-US", {
         month: "short",
@@ -42,6 +49,23 @@ export default function TweetCard({ id, text, date, link, author, images }: Twee
 
       {/* Tweet body */}
       <p className="mb-4 whitespace-pre-wrap leading-relaxed text-white/90">{text}</p>
+
+      {/* Quoted tweet */}
+      {quotedTweet && (
+        <a
+          href={quotedTweet.link || "#"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-4 block rounded-lg border border-white/10 bg-white/5 p-3 transition-colors hover:bg-white/10"
+        >
+          <span className="mb-1 block text-xs font-medium text-pink">
+            {quotedTweet.author}
+          </span>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/70">
+            {quotedTweet.text}
+          </p>
+        </a>
+      )}
 
       {/* Tweet images */}
       {images && images.length > 0 && (
