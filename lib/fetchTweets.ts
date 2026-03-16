@@ -14,6 +14,7 @@ export interface Tweet {
   author: string;
   images: string[];
   quotedTweet?: QuotedTweet;
+  retweetedFrom?: string; // original author when this is a retweet
 }
 
 const parser = new RSSParser();
@@ -66,24 +67,29 @@ export async function fetchTweets(): Promise<Tweet[]> {
 
       const tweets: Tweet[] = (feed.items || []).map((item, i) => {
         const rawContent = item.content || item.contentSnippet || item.title || "";
-        const images = extractImages(rawContent);
+        const images = extractImages(rawContent).map(proxyImageUrl);
 
         // Also check enclosure for media
-        if (item.enclosure?.url && !images.includes(item.enclosure.url)) {
-          images.push(item.enclosure.url);
+        if (item.enclosure?.url && !images.includes(proxyImageUrl(item.enclosure.url))) {
+          images.push(proxyImageUrl(item.enclosure.url));
         }
 
         // Extract quoted tweet before stripping HTML
         const { quotedTweet, mainContent } = extractQuotedTweet(rawContent);
 
+        // Detect retweets (RT @username prefix)
+        const strippedText = stripHtml(mainContent);
+        const { retweetedFrom, cleanText } = extractRetweet(strippedText);
+
         return {
           id: item.guid || item.link || `tweet-${i}`,
-          text: stripHtml(mainContent),
+          text: cleanText,
           date: item.isoDate || item.pubDate || "",
           link: item.link?.replace(linkPrefix, "https://x.com") || `https://x.com/${USERNAME}`,
           author: `@${USERNAME}`,
           images,
           ...(quotedTweet && { quotedTweet }),
+          ...(retweetedFrom && { retweetedFrom }),
         };
       });
 
@@ -101,6 +107,26 @@ export async function fetchTweets(): Promise<Tweet[]> {
   // Fallback: return sample tweets
   console.warn("All RSS sources unavailable, using sample tweets");
   return SAMPLE_TWEETS;
+}
+
+function extractRetweet(text: string): { retweetedFrom: string | null; cleanText: string } {
+  // RSSHub formats retweets as "RT @username: ..." or "RT username\n..."
+  const rtMatch = text.match(/^RT\s+@?(\w+):?\s*/);
+  if (rtMatch) {
+    return {
+      retweetedFrom: rtMatch[1],
+      cleanText: text.slice(rtMatch[0].length).trim(),
+    };
+  }
+  return { retweetedFrom: null, cleanText: text };
+}
+
+function proxyImageUrl(url: string): string {
+  // Route Twitter images through our proxy to avoid hotlink blocking
+  if (url.includes("twimg.com")) {
+    return `/api/image?url=${encodeURIComponent(url)}`;
+  }
+  return url;
 }
 
 function extractQuotedTweet(html: string): { quotedTweet: QuotedTweet | null; mainContent: string } {
