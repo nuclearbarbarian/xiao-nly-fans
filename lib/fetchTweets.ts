@@ -124,9 +124,10 @@ function extractRetweet(text: string): { retweetedFrom: string | null; cleanText
 
 
 function extractQuotedTweet(html: string): { quotedTweet: QuotedTweet | null; mainContent: string } {
-  // RSSHub wraps quoted tweets in <blockquote> tags
+  // RSSHub wraps quoted tweets in <div class="rsshub-quote"> or <blockquote> tags
+  const quoteRegex = /<div\s+class="rsshub-quote"[^>]*>([\s\S]*?)<\/div>/i;
   const blockquoteRegex = /<blockquote[^>]*>([\s\S]*?)<\/blockquote>/i;
-  const match = html.match(blockquoteRegex);
+  const match = html.match(quoteRegex) || html.match(blockquoteRegex);
 
   if (!match) {
     return { quotedTweet: null, mainContent: html };
@@ -150,7 +151,16 @@ function extractQuotedTweet(html: string): { quotedTweet: QuotedTweet | null; ma
   }
 
   // Get the quoted text
-  const quotedText = stripHtml(blockquoteHtml);
+  let quotedText = stripHtml(blockquoteHtml);
+
+  // RSSHub formats as "Author Name: quoted text" — extract author from text if not found via link
+  if (author === "Unknown" && quotedText) {
+    const inlineAuthorMatch = quotedText.match(/^([^:]{1,40}):\s+/);
+    if (inlineAuthorMatch) {
+      author = inlineAuthorMatch[1];
+      quotedText = quotedText.slice(inlineAuthorMatch[0].length).trim();
+    }
+  }
 
   // Remove the blockquote from the main content
   const mainContent = html.replace(match[0], "").trim();
