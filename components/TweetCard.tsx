@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Tooltip from "./Tooltip";
 
 interface QuotedTweet {
@@ -82,13 +83,16 @@ export default function TweetCard({ id, text, date, link, author, images, quoted
       {images && images.length > 0 && (
         <div className={`mb-4 grid gap-2 ${images.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
           {images.map((src, i) => (
-            <img
-              key={i}
-              src={src}
-              alt={`Tweet image ${i + 1}`}
-              className="w-full rounded-xl border border-white/5 object-cover"
-              loading="lazy"
-            />
+            <div key={i} className="relative aspect-video w-full overflow-hidden rounded-xl border border-white/5">
+              <Image
+                src={src}
+                alt={`Tweet image ${i + 1}`}
+                fill
+                className="object-cover"
+                sizes="(max-width: 600px) 100vw, 600px"
+                unoptimized={!src.includes("twimg.com")}
+              />
+            </div>
           ))}
         </div>
       )}

@@ -67,12 +67,13 @@ export async function fetchTweets(): Promise<Tweet[]> {
 
       const tweets: Tweet[] = (feed.items || []).map((item, i) => {
         const rawContent = item.content || item.contentSnippet || item.title || "";
-        const images = extractImages(rawContent).map(proxyImageUrl);
+        const images = extractImages(rawContent);
 
         // Also check enclosure for media
-        if (item.enclosure?.url && !images.includes(proxyImageUrl(item.enclosure.url))) {
-          images.push(proxyImageUrl(item.enclosure.url));
+        if (item.enclosure?.url && !images.includes(item.enclosure.url)) {
+          images.push(item.enclosure.url);
         }
+
 
         // Extract quoted tweet before stripping HTML
         const { quotedTweet, mainContent } = extractQuotedTweet(rawContent);
@@ -121,13 +122,6 @@ function extractRetweet(text: string): { retweetedFrom: string | null; cleanText
   return { retweetedFrom: null, cleanText: text };
 }
 
-function proxyImageUrl(url: string): string {
-  // Route Twitter images through our proxy to avoid hotlink blocking
-  if (url.includes("twimg.com")) {
-    return `/api/image?url=${encodeURIComponent(url)}`;
-  }
-  return url;
-}
 
 function extractQuotedTweet(html: string): { quotedTweet: QuotedTweet | null; mainContent: string } {
   // RSSHub wraps quoted tweets in <blockquote> tags
@@ -178,7 +172,9 @@ function extractImages(html: string): string[] {
   while ((match = imgRegex.exec(html)) !== null) {
     // Skip emoji and tiny images, only keep tweet media
     if (match[1] && !match[1].includes("emoji") && !match[1].includes("hashflag")) {
-      images.push(match[1]);
+      // Decode HTML entities in URLs (e.g. &amp; → &)
+      const url = match[1].replace(/&amp;/g, "&");
+      images.push(url);
     }
   }
   return images;
