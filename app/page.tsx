@@ -1,41 +1,54 @@
-import Image from "next/image";
-import Header from "@/components/Header";
-import Feed from "@/components/Feed";
+import Link from "next/link";
+import TweetCard from "@/components/TweetCard";
 import { fetchTweets } from "@/lib/fetchTweets";
 
-// Revalidate every 5 minutes — tweets are fetched server-side and cached
 export const revalidate = 300;
+
+const AVATAR = "https://pbs.twimg.com/profile_images/1437821373225717761/CzezIwWV_400x400.jpg";
 
 export default async function Home() {
   const tweets = await fetchTweets();
 
   return (
     <div className="min-h-screen bg-dark">
-      <Header />
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-dark/80 backdrop-blur-md">
+        <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
+          <Link href="/" className="flex items-baseline gap-0.5">
+            <span className="text-xl font-bold tracking-tight text-white">Xiao-nly</span>
+            <span className="font-cursive text-2xl text-primary">Fans</span>
+          </Link>
+          <a
+            href="https://x.com/xiaowang1984"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-accent"
+          >
+            Subscribe
+          </a>
+        </div>
+      </header>
 
       <main className="mx-auto max-w-2xl px-4 py-6">
         <div className="mb-6 rounded-xl border border-white/5 bg-card p-5">
           <div className="flex items-center gap-3">
-            <Image
-              src="https://pbs.twimg.com/profile_images/1437821373225717761/CzezIwWV_400x400.jpg"
-              alt="Xiao Wang"
-              width={48}
-              height={48}
-              className="h-12 w-12 rounded-full"
-            />
+            <img src={AVATAR} alt="Xiao Wang" className="h-12 w-12 rounded-full" />
             <div>
               <h2 className="font-semibold text-white">@xiaowang1984</h2>
-              <p className="text-sm italic text-white/70">
-                &ldquo;Just asking questions!&rdquo;
-              </p>
-              <p className="text-sm text-gray">
-                Energy policy tweets, explained for everyone.
-              </p>
+              <p className="text-sm italic text-white/70">&ldquo;Just asking questions!&rdquo;</p>
+              <p className="text-sm text-gray">Energy policy tweets, explained for everyone.</p>
             </div>
           </div>
         </div>
 
-        <Feed tweets={tweets} />
+        {tweets.length === 0 ? (
+          <div className="rounded-xl border border-white/5 bg-card p-6 text-center text-gray">No tweets found.</div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {tweets.map((tweet) => (
+              <TweetCard key={tweet.id} {...tweet} />
+            ))}
+          </div>
+        )}
       </main>
 
       <footer className="border-t border-white/5 py-6 text-center text-xs text-gray">

@@ -2,39 +2,27 @@
 
 import { useState } from "react";
 
-interface TooltipProps {
-  tweetId: string;
-  tweetText: string;
-}
-
-export default function Tooltip({ tweetId, tweetText }: TooltipProps) {
+export default function Tooltip({ tweetText }: { tweetText: string }) {
   const [explanation, setExplanation] = useState<string | null>(null);
   const [searchTerms, setSearchTerms] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
+  const loading = open && explanation === null;
+
   async function fetchExplanation() {
-    if (explanation) {
-      setOpen(!open);
-      return;
-    }
-
+    if (explanation) { setOpen(!open); return; }
     setOpen(true);
-    setLoading(true);
-
     try {
       const res = await fetch("/api/explain", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tweetText, tweetId }),
+        body: JSON.stringify({ tweetText }),
       });
       const data = await res.json();
-      setExplanation(data.text || data.explanation || "No explanation available.");
+      setExplanation(data.text || "No explanation available.");
       setSearchTerms(data.searchTerms || []);
     } catch {
       setExplanation("Failed to load explanation.");
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -43,18 +31,8 @@ export default function Tooltip({ tweetId, tweetText }: TooltipProps) {
       <button
         onClick={fetchExplanation}
         className="flex items-center gap-1.5 text-xs text-pink transition-colors hover:text-primary"
-        aria-label="Explain this tweet"
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10" />
           <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
           <line x1="12" y1="17" x2="12.01" y2="17" />
@@ -76,13 +54,7 @@ export default function Tooltip({ tweetId, tweetText }: TooltipProps) {
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-white/5 pt-2">
                   <span className="text-xs text-gray">Learn more:</span>
                   {searchTerms.map((term, i) => (
-                    <a
-                      key={i}
-                      href={`https://www.google.com/search?q=${encodeURIComponent(term)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary underline decoration-primary/30 hover:decoration-primary"
-                    >
+                    <a key={i} href={`https://www.google.com/search?q=${encodeURIComponent(term)}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline decoration-primary/30 hover:decoration-primary">
                       {term}
                     </a>
                   ))}

@@ -3,19 +3,10 @@ import { explainTweet } from "@/lib/claude";
 
 export async function POST(request: Request) {
   try {
-    const { tweetText, tweetId } = await request.json();
-
-    if (!tweetText || !tweetId) {
-      return NextResponse.json(
-        { error: "tweetText and tweetId are required" },
-        { status: 400 }
-      );
-    }
-
-    const explanation = await explainTweet(tweetText, tweetId);
-    return NextResponse.json(explanation);
+    const { tweetText } = await request.json();
+    if (!tweetText) return NextResponse.json({ error: "tweetText is required" }, { status: 400 });
+    return NextResponse.json(await explainTweet(tweetText));
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to generate explanation";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Failed" }, { status: 500 });
   }
 }
