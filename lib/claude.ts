@@ -4,7 +4,7 @@ const client = new Anthropic();
 
 export interface Explanation {
   text: string;
-  citations: { title: string; url: string }[];
+  searchTerms: string[];
 }
 
 const explanationCache = new Map<string, Explanation>();
@@ -20,10 +20,10 @@ export async function explainTweet(tweetText: string, tweetId: string): Promise<
       "You are an energy policy expert writing for a general audience. " +
       "Given a tweet about energy policy, explain it in 1-2 plain-English sentences. " +
       "Define any jargon, acronyms, or technical terms. " +
-      "Then provide 1-3 citations to authoritative sources where the reader can learn more. " +
-      "Use real, well-known sources like FERC, EIA, NREL, DOE, utility dive, RMI, LBNL, state PUC sites, etc. " +
+      "Then suggest 1-3 search terms the reader can Google to learn more. " +
+      "These should be specific, useful search queries — e.g. 'FERC Order 2222 distributed energy', 'LCOE vs LCOS comparison', 'EIA electricity generation costs 2024'. " +
       "Respond ONLY with valid JSON in this exact format, no other text:\n" +
-      '{"text": "your explanation here", "citations": [{"title": "Source Name", "url": "https://..."}]}',
+      '{"text": "your explanation here", "searchTerms": ["search term 1", "search term 2"]}',
     messages: [
       {
         role: "user",
@@ -43,11 +43,11 @@ export async function explainTweet(tweetText: string, tweetId: string): Promise<
   let explanation: Explanation;
   try {
     explanation = JSON.parse(cleaned);
-    if (!explanation.text || !Array.isArray(explanation.citations)) {
+    if (!explanation.text || !Array.isArray(explanation.searchTerms)) {
       throw new Error("Invalid shape");
     }
   } catch {
-    explanation = { text: cleaned || "Could not generate explanation.", citations: [] };
+    explanation = { text: cleaned || "Could not generate explanation.", searchTerms: [] };
   }
 
   explanationCache.set(tweetId, explanation);

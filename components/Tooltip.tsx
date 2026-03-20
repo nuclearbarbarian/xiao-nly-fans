@@ -2,11 +2,6 @@
 
 import { useState } from "react";
 
-interface Citation {
-  title: string;
-  url: string;
-}
-
 interface TooltipProps {
   tweetId: string;
   tweetText: string;
@@ -14,7 +9,7 @@ interface TooltipProps {
 
 export default function Tooltip({ tweetId, tweetText }: TooltipProps) {
   const [explanation, setExplanation] = useState<string | null>(null);
-  const [citations, setCitations] = useState<Citation[]>([]);
+  const [searchTerms, setSearchTerms] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -35,7 +30,7 @@ export default function Tooltip({ tweetId, tweetText }: TooltipProps) {
       });
       const data = await res.json();
       setExplanation(data.text || data.explanation || "No explanation available.");
-      setCitations(data.citations || []);
+      setSearchTerms(data.searchTerms || []);
     } catch {
       setExplanation("Failed to load explanation.");
     } finally {
@@ -77,18 +72,18 @@ export default function Tooltip({ tweetId, tweetText }: TooltipProps) {
           ) : (
             <>
               <p>{explanation}</p>
-              {citations.length > 0 && (
+              {searchTerms.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-white/5 pt-2">
-                  <span className="text-xs text-gray">Sources:</span>
-                  {citations.map((cite, i) => (
+                  <span className="text-xs text-gray">Learn more:</span>
+                  {searchTerms.map((term, i) => (
                     <a
                       key={i}
-                      href={cite.url}
+                      href={`https://www.google.com/search?q=${encodeURIComponent(term)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs text-primary underline decoration-primary/30 hover:decoration-primary"
                     >
-                      {cite.title}
+                      {term}
                     </a>
                   ))}
                 </div>
