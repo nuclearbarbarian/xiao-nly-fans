@@ -68,12 +68,12 @@ export default function TweetCard({ id, text, date, link, author, images, quoted
           href={quotedTweet.link || "#"}
           target="_blank"
           rel="noopener noreferrer"
-          className="mb-4 block rounded-lg border border-white/10 bg-white/5 p-3 transition-colors hover:bg-white/10"
+          className="mb-4 block overflow-hidden rounded-lg border border-white/10 bg-white/5 p-3 transition-colors hover:bg-white/10"
         >
           <span className="mb-1 block text-xs font-medium text-pink">
             {quotedTweet.author}
           </span>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/70">
+          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-white/70">
             {quotedTweet.text}
           </p>
         </a>
